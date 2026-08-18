@@ -22,7 +22,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-st.title("🔐 TokenShift 75baran.raw")
+st.title("🔐 TokenShift   75baran.raw")
 st.caption("Hayallerin herkese Açık Olmak Zorunda Değil")
 
 @st.cache_resource
@@ -33,7 +33,7 @@ enc = get_encoder()
 MAX_SAFE_VOCAB = enc.max_token_value + 1
 
 mode = st.radio("İşlem Türü", ["Hayallerini Şifrele (Encode)", "Başkasının Hayallerini Öğren (Decode)"], horizontal=True)
-text_input = st.text_area("Hayal (Metin veya [123, 456...] Token Listesi)", placeholder="Buraya Hayallerini veya Sayı Dizisini girin...", height=130)
+text_input = st.text_area("Hayal (Metin veya [123, 456...] Sayı Dizisi)", placeholder="Buraya Hayallerini veya Sayı Dizisini girin...", height=130)
 shift = st.number_input("Gizli Kod (Shift Key)", value=15, step=1)
 
 if st.button("Tree", type="primary"):
