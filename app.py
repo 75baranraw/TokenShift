@@ -22,8 +22,8 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-st.title("🔐 TokenShift")
-st.caption("Tiktoken tabanlı token kaydırma şifreleyicisi")
+st.title("🔐 TokenShift 75baran.raw")
+st.caption("Hayallerin herkese Açık Olmak Zorunda Değil")
 
 @st.cache_resource
 def get_encoder():
@@ -32,11 +32,11 @@ def get_encoder():
 enc = get_encoder()
 MAX_SAFE_VOCAB = enc.max_token_value + 1
 
-mode = st.radio("İşlem Türü", ["Metin Şifrele (Encode)", "Şifreli Metni / Token Listesini Çöz (Decode)"], horizontal=True)
-text_input = st.text_area("Girdi (Metin veya [123, 456...] Token Listesi)", placeholder="Buraya metin veya token listesi girin...", height=130)
-shift = st.number_input("Kaydırma Anahtarı (Shift Key)", value=15, step=1)
+mode = st.radio("İşlem Türü", ["Hayallerini Şifrele (Encode)", "Başkasının Hayallerini Öğren (Decode)"], horizontal=True)
+text_input = st.text_area("Hayal (Metin veya [123, 456...] Token Listesi)", placeholder="Buraya Hayallerini veya Sayı Dizisini girin...", height=130)
+shift = st.number_input("Gizli Kod (Shift Key)", value=15, step=1)
 
-if st.button("Çalıştır", type="primary"):
+if st.button("Tree", type="primary"):
     val = text_input.strip()
     if val:
         try:
@@ -72,4 +72,4 @@ if st.button("Çalıştır", type="primary"):
         except Exception as e:
             st.error(f"İşlem sırasında bir hata oluştu: {e}")
     else:
-        st.warning("Lütfen bir metin veya token listesi girin.")
+        st.warning("Lütfen Hayallerini Benimle Paylaş.")
