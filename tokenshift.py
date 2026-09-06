@@ -1,153 +1,68 @@
-<!DOCTYPE html>
-<html lang="tr">
-<head>
-    <meta charset="UTF-8">
-    <title>75 Token Master Decoder</title>
-    <!-- GPT-4o ve o1/o3 destekleyen o200k_base sözlüğü -->
-    <script src="https://cdn.jsdelivr.net/npm/gpt-tokenizer/dist/o200k_base.js"></script>
-    <style>
-        body {
-            background-color: #0b0f19;
-            color: #f1f5f9;
-            font-family: system-ui, -apple-system, sans-serif;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-            margin: 0;
-            padding: 20px;
-            box-sizing: border-box;
-        }
-        .card {
-            background-color: #1e293b;
-            padding: 24px;
-            border-radius: 12px;
-            width: 100%;
-            max-width: 520px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.6);
-            border: 1px solid #334155;
-        }
-        h2 { margin-top: 0; text-align: center; color: #38bdf8; font-size: 1.2rem; }
-        textarea {
-            width: 100%;
-            height: 100px;
-            background-color: #0f172a;
-            border: 1px solid #475569;
-            border-radius: 8px;
-            color: #fff;
-            padding: 10px;
-            box-sizing: border-box;
-            resize: none;
-            font-size: 13px;
-            outline: none;
-            margin-bottom: 12px;
-        }
-        .btn-group { display: flex; gap: 10px; margin-bottom: 15px; }
-        button {
-            flex: 1;
-            padding: 12px;
-            border: none;
-            border-radius: 8px;
-            font-weight: 600;
-            cursor: pointer;
-            font-size: 13px;
-            transition: 0.2s;
-        }
-        .btn-enc { background-color: #2563eb; color: white; }
-        .btn-dec { background-color: #16a34a; color: white; }
-        button:hover { opacity: 0.9; }
-        .result-box {
-            background-color: #0f172a;
-            border: 1px dashed #475569;
-            border-radius: 8px;
-            padding: 12px;
-            font-size: 14px;
-            min-height: 50px;
-            word-break: break-word;
-            white-space: pre-wrap;
-            color: #4ade80;
-            user-select: all;
-        }
-    </style>
-</head>
-<body>
+import re
+import streamlit as st
+import tiktoken
 
-<div class="card">
-    <h2>⚡ 75 Token Decoder (o200k_base)</h2>
-    
-    <textarea id="inputText" placeholder="Metin yaz (Şifrele) veya Sayıları yapıştır (Çöz)..."></textarea>
-    
-    <div class="btn-group">
-        <button class="btn-enc" onclick="sifrele()">🔐 Metni Şifrele (+75)</button>
-        <button class="btn-dec" onclick="coz()">🔓 Şifreyi Çöz (-75 & Metin)</button>
-    </div>
+st.set_page_config(page_title="TokenShift", page_icon="🔐", layout="centered")
 
-    <div style="font-size: 12px; margin-bottom: 5px; color: #94a3b8;">Sonuç:</div>
-    <div class="result-box" id="output">-</div>
-</div>
+# Tokenizer sözlüğü (cl100k_base standart GPT-4 / GPT-3.5)
+@st.cache_resource
+def get_encoder():
+    return tiktoken.get_encoding("cl100k_base")
 
-<script>
-    function getTokenizer() {
-        if (typeof GPTTokenizer_o200k_base !== 'undefined') {
-            return GPTTokenizer_o200k_base;
-        }
-        return null;
-    }
+enc = get_encoder()
 
-    function sifrele() {
-        const tokenizer = getTokenizer();
-        if (!tokenizer) {
-            showResult("❌ Kütüphane yüklenemedi! İnternet bağlantını kontrol et.", "#f87171");
-            return;
-        }
+# --- ARAYÜZ ---
+islem = st.radio(
+    "İşlem Türü",
+    ["Hayallerini Şifrele (Encode)", "Başkasının Hayallerini Öğren (Decode)"]
+)
 
-        const text = document.getElementById('inputText').value.trim();
-        if (!text) {
-            showResult("❌ Lütfen metin gir!", "#f87171");
-            return;
-        }
+girdi = st.text_area(
+    "Hayal (Metin veya [123, 456...] Sayı Dizisi)",
+    height=120,
+    placeholder="Metin yazın veya sayı dizisi yapıştırın..."
+)
 
-        try {
-            const tokens = tokenizer.encode(text);
-            const shifted = tokens.map(t => t + 75);
-            showResult("[" + shifted.join(", ") + "]", "#38bdf8");
-        } catch (e) {
-            showResult("Hata: " + e.message, "#f87171");
-        }
-    }
+shift = st.number_input("Gizli Kod (Shift Key)", value=75, step=1)
 
-    function coz() {
-        const tokenizer = getTokenizer();
-        if (!tokenizer) {
-            showResult("❌ Kütüphane yüklenemedi! İnternet bağlantını kontrol et.", "#f87171");
-            return;
-        }
+btn = st.button("İşlemi Uygula")
 
-        const input = document.getElementById('inputText').value;
-        const matches = input.match(/\d+/g);
-        
-        if (!matches || matches.length === 0) {
-            showResult("❌ Yapıştırdığın metinde sayı bulunamadı!", "#f87171");
-            return;
-        }
+# --- MANTIK ---
+if btn:
+    if not girdi.strip():
+        st.warning("Lütfen bir metin veya sayı dizisi girin.")
+    else:
+        if islem == "Hayallerini Şifrele (Encode)":
+            try:
+                # 1. Metni token ID listesine çevir
+                tokens = enc.encode(girdi)
+                # 2. Shift ekle (+75)
+                sifreli_tokens = [t + shift for t in tokens]
 
-        try {
-            // 75 çıkar
-            const rawTokens = matches.map(s => Number(s) - 75);
-            // Decode et
-            const decoded = tokenizer.decode(rawTokens);
-            showResult(decoded, "#4ade80");
-        } catch (e) {
-            showResult("Hata: " + e.message, "#f87171");
-        }
-    }
+                st.subheader("Sonuç (Token ID Listesi):")
+                st.code(str(sifreli_tokens), language="json")
+            except Exception as e:
+                st.error(f"Şifreleme hatası: {e}")
 
-    function showResult(text, color) {
-        const out = document.getElementById('output');
-        out.innerText = text;
-        out.style.color = color;
-    }
-</script>
+        else:  # Decode
+            # Girdideki sayıları regex ile ayıkla
+            sayilar = re.findall(r"\d+", girdi)
 
-</body>
-</html>
+            if not sayilar:
+                st.error("Girdiğiniz metinde geçerli sayı dizisi bulunamadı!")
+            else:
+                try:
+                    # 1. Integer listesine dönüştür
+                    token_ids = [int(s) for s in sayilar]
+                    # 2. Shift değerini çıkar (-75)
+                    orijinal_tokens = [t - shift for t in token_ids]
+                    # 3. Token'ları doğrudan metne çöz (Decode)
+                    cozulmus_metin = enc.decode(orijinal_tokens)
+
+                    st.subheader("Sonuç (Metin):")
+                    st.code(cozulmus_metin, language="text")
+
+                    st.subheader("Sonuç (Token ID Listesi):")
+                    st.code(str(orijinal_tokens), language="json")
+                except Exception as e:
+                    st.error(f"Çözme hatası: Token sözlüğü eşleşmedi. ({e})")
